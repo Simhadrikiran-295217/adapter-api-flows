@@ -59,10 +59,10 @@ sequenceDiagram
     Customer->>Channel: Select Product
 
 
-    Channel->>PD: GET /product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
+    Channel->>PD: GET /v1/product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
 
 
-    PD->>Adapter: GET /product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
+    PD->>Adapter: GET /v1/product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
 
 
     Adapter->>Core: GET /v1/product-versions:batchGet<br/>?version_ids={product_version_id}<br/>&view=PRODUCT_VERSION_VIEW_INCLUDE_PARAMETERS
@@ -96,7 +96,7 @@ sequenceDiagram
 
 ### 2. Retrieve Product Listing from Product Directory SD
 
-**API:** `GET /product-directory/products/retrieve`
+**API:** `GET /v1/product-directory/products/retrieve`
 
 The Customer Channel calls the Product Directory SD to fetch the list of available products. The Product Directory SD forwards this request to the FinX TM Adapter.
 
@@ -136,7 +136,7 @@ The customer selects a product from the rendered list, triggering the retrieval 
 
 ### 5. Retrieve Product Sales and Marketing Details
 
-**API:** `GET /product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve`
+**API:** `GET /v1/product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve`
 
 The Customer Channel calls the Product Directory SD to retrieve detailed sales and marketing information for the selected product. The request is forwarded to the FinX TM Adapter.
 
