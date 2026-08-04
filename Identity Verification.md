@@ -8,11 +8,11 @@ sequenceDiagram
     participant CH as Customer Channel
     participant BIAN as Party Lifecycle Management SD
     participant FG as FinX TM Adapter
-    participant ADP as TM Core
+    participant ADP as TM Core (Jumio)
 
     CH->>BIAN: POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
     BIAN->>FG: Initiate Identity Proofing request
-    FG->>ADP: Forward request to Jumio Adapter
+    FG->>ADP: [Step 1] Jumio Account API\nPOST https://account.emea-1.jumio.ai/api/v1/accounts\n(consent, customerInternalRef, location, ip, region, workflowDefinitionKey=2)
 
     Note over ADP: Uses predefined workflowDefinitionKey = 2
 
@@ -22,27 +22,50 @@ sequenceDiagram
 
     CH->>BIAN: Upload FRONT and BACK document images
     BIAN->>FG: Forward document images
-    FG->>ADP: Upload FRONT/BACK to Jumio
+    FG->>ADP: [Step 2] Front Image API\nPOST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/FRONT
+    ADP-->>FG: FRONT upload accepted
 
-    ADP-->>FG: FRONT/BACK upload accepted
+    FG->>ADP: [Step 3] Back Image API\nPOST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/BACK
+    ADP-->>FG: BACK upload accepted
+
     FG-->>BIAN: Document upload status
     BIAN-->>CH: Upload accepted
 
-    FG->>ADP: Finalize workflow after both uploads
+    FG->>ADP: [Step 4] Finalize Workflow API\nPOST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}
     ADP-->>FG: Workflow finalized
 
     Note over FG,ADP: Finalize must occur after BOTH uploads\nElse Fetch Result may return "precondition not fulfilled"
 
-    FG->>ADP: Fetch final assessment result
+    FG->>ADP: [Step 5] Fetch Result API\nGET https://retrieval.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}
     ADP-->>FG: Full assessment result payload (original Jumio result)
 
-    FG->>FG: Upload full fetch-result payload as PDF log document
-    FG->>FG: Register document in Document Directory\nand persist assessment/final decision in PLM
+    FG->>FG: [Step 6] Upload Jumio result as PDF to S3\nPOST https://gatewayqa.ustfinx.com/v1/document-directory/s3/upload
+    FG->>FG: [Step 7] Register document in Document Directory\nPOST https://gatewayqa.ustfinx.com/v1/document-directory/register\n(returns Document Directory ID)
+    FG->>FG: [Step 8] Update documentInstanceReference in Identity Proofing BQ\nPOST https://gatewayqa.ustfinx.com/v1/document-directory/register\n(links log document back to BQ)
 
-    ADP-->>FG: Final assessment + metadata confirmed
     FG-->>BIAN: Initiate response with assessment + final result + document reference
     BIAN-->>CH: IdentityProofing Initiate response
 ```
+
+## API Reference
+
+### Jumio API Endpoints
+
+| Step | API | Details | Jumio Endpoint |
+|------|-----|---------|----------------|
+| 1 | **Jumio Account API** | Call the Jumio Account Creation API with user consent, customer internal reference, location, IP, region, and workflow definition key (2). The response provides the workflow execution ID, access token, and upload URLs for front and back images. Use this response to start uploading documentation. | `POST https://account.emea-1.jumio.ai/api/v1/accounts` |
+| 2 | **Front Image API** | Upload the front image to Jumio using the front image upload URL, workflow execution Id and access token from the Account API response. Send the file as a multipart request in JPG or PNG format. | `POST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/FRONT` |
+| 3 | **Back Image API** | Upload the back image to Jumio using the back image upload URL, workflow execution Id and access token from the Account API response. Send the file as a multipart request in JPG or PNG format. | `POST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/BACK` |
+| 4 | **Finalize Workflow API** | Call the Jumio Finalize Workflow API to indicate all credential parts are uploaded and verification can proceed. Both images must be uploaded before this call; otherwise, Jumio returns a "precondition not fulfilled" error in the FetchResult API. | `POST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}` |
+| 5 | **Fetch Result API** | Call the Jumio Fetch Result API with the workflow execution Id and account ID. | `GET https://retrieval.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}` |
+
+### FinX Glue API Endpoints
+
+| Step | API | Details | FinX Glue Endpoint |
+|------|-----|---------|-------------------|
+| 6 | **Generate the Jumio result object as a PDF document and save to S3** | The same full Fetch Result response payload is uploaded to S3 as a document (the Identity Proofing Log document). | `POST https://gatewayqa.ustfinx.com/v1/document-directory/s3/upload` |
+| 7 | **Register document in Document Directory** | The S3 document's URL is registered into Document Directory, tagged as an Identity Proofing Log, using the Party ID and Assessment ID (if applicable). Document Directory returns a new Document Directory ID for this log document. | `POST https://gatewayqa.ustfinx.com/v1/document-directory/register` |
+| 8 | **Update document ID reference in Identity Proofing BQ** | The Document Directory ID from Step 7 is updated into the documentInstanceReference object of the Identity Proofing BQ record, linking the log document back to the BQ. | `POST https://gatewayqa.ustfinx.com/v1/document-directory/register` |
 
 ## Notes
 
