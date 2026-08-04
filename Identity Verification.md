@@ -5,10 +5,10 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    participant CH as Channel
-    participant BIAN as BIAN API
-    participant FG as FinX Glue
-    participant ADP as Jumio Adapter
+    participant CH as Customer Channel
+    participant BIAN as Party Lifecycle Management SD
+    participant FG as FinX TM Adapter
+    participant ADP as TM Core
 
     CH->>BIAN: POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
     BIAN->>FG: Initiate Identity Proofing request
