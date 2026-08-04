@@ -11,7 +11,7 @@ sequenceDiagram
     participant ADP as TM Core (Jumio)
 
     CH->>BIAN: POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
-    BIAN->>FG: Initiate Identity Proofing request
+    BIAN->>FG: POST /v1/PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
     FG->>ADP: Jumio Account API POST /v1/accounts\n(consent, customerInternalRef, location, ip, region, workflowDefinitionKey=2)
 
     Note over ADP: Uses predefined workflowDefinitionKey = 2
