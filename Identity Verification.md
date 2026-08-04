@@ -4,7 +4,6 @@
 
 ```mermaid
 sequenceDiagram
-    autonumber
     participant CH as Customer Channel
     participant BIAN as Party Lifecycle Management SD
     participant FG as FinX TM Adapter
