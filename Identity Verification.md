@@ -12,7 +12,7 @@ sequenceDiagram
 
     CH->>BIAN: POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
     BIAN->>FG: Initiate Identity Proofing request
-    FG->>ADP: [Step 1] Jumio Account API\nPOST https://account.emea-1.jumio.ai/api/v1/accounts\n(consent, customerInternalRef, location, ip, region, workflowDefinitionKey=2)
+    FG->>ADP: Jumio Account API POST /v1/accounts\n(consent, customerInternalRef, location, ip, region, workflowDefinitionKey=2)
 
     Note over ADP: Uses predefined workflowDefinitionKey = 2
 
@@ -22,26 +22,26 @@ sequenceDiagram
 
     CH->>BIAN: Upload FRONT and BACK document images
     BIAN->>FG: Forward document images
-    FG->>ADP: [Step 2] Front Image API\nPOST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/FRONT
+    FG->>ADP: Front Image API POST /v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/FRONT
     ADP-->>FG: FRONT upload accepted
 
-    FG->>ADP: [Step 3] Back Image API\nPOST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/BACK
+    FG->>ADP: Back Image API POST /v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/BACK
     ADP-->>FG: BACK upload accepted
 
     FG-->>BIAN: Document upload status
     BIAN-->>CH: Upload accepted
 
-    FG->>ADP: [Step 4] Finalize Workflow API\nPOST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}
+    FG->>ADP: Finalize Workflow API POST /v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}
     ADP-->>FG: Workflow finalized
 
     Note over FG,ADP: Finalize must occur after BOTH uploads\nElse Fetch Result may return "precondition not fulfilled"
 
-    FG->>ADP: [Step 5] Fetch Result API\nGET https://retrieval.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}
+    FG->>ADP: Fetch Result API GET /v1/accounts/{{accountId}}/\nworkflow-executions/{{workflowExecutionId}}
     ADP-->>FG: Full assessment result payload (original Jumio result)
 
-    FG->>FG: [Step 6] Upload Jumio result as PDF to S3\nPOST https://gatewayqa.ustfinx.com/v1/document-directory/s3/upload
-    FG->>FG: [Step 7] Register document in Document Directory\nPOST https://gatewayqa.ustfinx.com/v1/document-directory/register\n(returns Document Directory ID)
-    FG->>FG: [Step 8] Update documentInstanceReference in Identity Proofing BQ\nPOST https://gatewayqa.ustfinx.com/v1/document-directory/register\n(links log document back to BQ)
+    FG->>FG: Upload Jumio result as PDF to S3 POST /v1/document-directory/s3/upload
+    FG->>FG: Register document in Document Directory POST /v1/document-directory/register\n(returns Document Directory ID)
+    FG->>FG: Update documentInstanceReference in Identity Proofing BQ POST /v1/document-directory/register\n(links log document back to BQ)
 
     FG-->>BIAN: Initiate response with assessment + final result + document reference
     BIAN-->>CH: IdentityProofing Initiate response
