@@ -15,7 +15,7 @@ sequenceDiagram
     Customer->>Channel: Access Product Onboarding Journey
 
 
-    Channel->>PD: GET /v1/product-directory/products/retrieve
+    Channel->>PD: GET /product-directory/products/retrieve
 
 
     PD->>Adapter: GET /v1/product-directory/products/retrieve
@@ -32,7 +32,7 @@ sequenceDiagram
     PD-->>Channel: 200 OK ProductListing[]
 
 
-    Channel->>PD: GET /v1/product-directory/{product-directory-id}/retrieve
+    Channel->>PD: GET /product-directory/{product-directory-id}/retrieve
 
 
     PD->>Adapter: GET /v1/product-directory/{product-directory-id}/retrieve
