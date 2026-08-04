@@ -1,3 +1,4 @@
+```mermaid
 sequenceDiagram
 
     participant Customer as Customer
@@ -62,5 +63,5 @@ sequenceDiagram
     Customer->>Channel: Click Apply
 
 
-    Note right of Channel: Continue to Sales Product Agreement<br/>or Account Opening Journey
- 
+    Note right of Channel: Continue to Account Opening Journey
+```
