@@ -59,7 +59,7 @@ sequenceDiagram
     Customer->>Channel: Select Product
 
 
-    Channel->>PD: GET /v1/product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
+    Channel->>PD: GET /product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
 
 
     PD->>Adapter: GET /v1/product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
