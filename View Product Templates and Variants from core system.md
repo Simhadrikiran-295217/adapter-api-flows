@@ -10,7 +10,7 @@ sequenceDiagram
     participant Core as Thought Machine API
 
 
-    Customer->>Channel: Open Product Marketplace
+    Customer->>Channel: Access Product Onboarding Journey
 
 
     Channel->>Adapter: GET /product-directory/products/retrieve
