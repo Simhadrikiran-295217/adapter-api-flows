@@ -8,7 +8,7 @@ sequenceDiagram
     participant CH as Customer Channel
     participant BIAN as Party Lifecycle Management SD
     participant FG as FinX TM Adapter
-    participant ADP as TM Core (Jumio)
+    participant ADP as Jumio
 
     CH->>BIAN: POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
     BIAN->>FG: POST /v1/PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
