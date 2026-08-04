@@ -5,15 +5,20 @@ sequenceDiagram
 
     participant Channel as Customer Channel
 
-    participant Adapter as Adapter<br/>(BIAN Layer)
+    participant PD as Product Directory SD
 
-    participant Core as Thought Machine API
+    participant Adapter as FinX TM Adapter
+
+    participant Core as TM Core
 
 
     Customer->>Channel: Access Product Onboarding Journey
 
 
-    Channel->>Adapter: GET /product-directory/products/retrieve
+    Channel->>PD: GET /product-directory/products/retrieve
+
+
+    PD->>Adapter: GET /product-directory/products/retrieve
 
 
     Adapter->>Core: GET /v1/products?is_internal=false
@@ -21,10 +26,16 @@ sequenceDiagram
     Core-->>Adapter: 200 OK Product Groups
 
 
-    Adapter-->>Channel: 200 OK ProductListing[]
+    Adapter-->>PD: 200 OK ProductListing[]
 
 
-    Channel->>Adapter: GET /product-directory/{product-directory-id}/retrieve
+    PD-->>Channel: 200 OK ProductListing[]
+
+
+    Channel->>PD: GET /product-directory/{product-directory-id}/retrieve
+
+
+    PD->>Adapter: GET /product-directory/{product-directory-id}/retrieve
 
 
     Adapter->>Core: GET /v1/product-versions<br/>?product_id={product-directory-id}<br/>&view=PRODUCT_VERSION_VIEW_INCLUDE_TAGS
@@ -33,7 +44,10 @@ sequenceDiagram
     Core-->>Adapter: 200 OK Product Versions
 
 
-    Adapter-->>Channel: 200 OK ProductDirectoryEntry<br/>ProductReference[]
+    Adapter-->>PD: 200 OK ProductDirectoryEntry<br/>ProductReference[]
+
+
+    PD-->>Channel: 200 OK ProductDirectoryEntry<br/>ProductReference[]
 
 
     Note right of Channel: Filter ProductReference[] where<br/>ProductPriority == LEVEL_VARIANT
@@ -45,7 +59,10 @@ sequenceDiagram
     Customer->>Channel: Select Product
 
 
-    Channel->>Adapter: GET /product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
+    Channel->>PD: GET /product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
+
+
+    PD->>Adapter: GET /product-directory/{product-directory-id}/sales-and-marketing/{sales-and-marketing-id}/retrieve
 
 
     Adapter->>Core: GET /v1/product-versions:batchGet<br/>?version_ids={product_version_id}<br/>&view=PRODUCT_VERSION_VIEW_INCLUDE_PARAMETERS
@@ -54,7 +71,10 @@ sequenceDiagram
     Core-->>Adapter: 200 OK Product Parameters
 
 
-    Adapter-->>Channel: 200 OK SalesandMarketing
+    Adapter-->>PD: 200 OK SalesandMarketing
+
+
+    PD-->>Channel: 200 OK SalesandMarketing
 
 
     Channel-->>Customer: Render Product Features<br/>Benefits<br/>Rates<br/>Limits<br/>Eligibility
