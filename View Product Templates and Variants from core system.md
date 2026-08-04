@@ -15,10 +15,10 @@ sequenceDiagram
     Customer->>Channel: Access Product Onboarding Journey
 
 
-    Channel->>PD: GET /product-directory/products/retrieve
+    Channel->>PD: GET /v1/product-directory/products/retrieve
 
 
-    PD->>Adapter: GET /product-directory/products/retrieve
+    PD->>Adapter: GET /v1/product-directory/products/retrieve
 
 
     Adapter->>Core: GET /v1/products?is_internal=false
@@ -32,10 +32,10 @@ sequenceDiagram
     PD-->>Channel: 200 OK ProductListing[]
 
 
-    Channel->>PD: GET /product-directory/{product-directory-id}/retrieve
+    Channel->>PD: GET /v1/product-directory/{product-directory-id}/retrieve
 
 
-    PD->>Adapter: GET /product-directory/{product-directory-id}/retrieve
+    PD->>Adapter: GET /v1/product-directory/{product-directory-id}/retrieve
 
 
     Adapter->>Core: GET /v1/product-versions<br/>?product_id={product-directory-id}<br/>&view=PRODUCT_VERSION_VIEW_INCLUDE_TAGS
