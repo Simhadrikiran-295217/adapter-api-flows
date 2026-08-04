@@ -7,48 +7,40 @@ sequenceDiagram
     autonumber
     participant CH as Channel
     participant BIAN as BIAN API
+    participant FG as FinX Glue
     participant ADP as Jumio Adapter
-    participant JAM as Jumio Account API
-    participant JFR as Jumio Front Image API
-    participant JBK as Jumio Back Image API
-    participant JFW as Jumio Finalize Workflow API
-    participant JRS as Jumio Fetch Result API
-    participant S3 as FinX S3 Upload API
-    participant DD as Document Directory
-    participant PLM as Party Lifecycle Management Store
 
     CH->>BIAN: POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
-    BIAN->>ADP: Initiate Identity Proofing request
+    BIAN->>FG: Initiate Identity Proofing request
+    FG->>ADP: Forward request to Jumio Adapter
 
     Note over ADP: Uses predefined workflowDefinitionKey = 2
 
-    ADP->>JAM: POST https://account.emea-1.jumio.ai/api/v1/accounts\n(consent + reference + location + ip + region + workflowDefinitionKey=2)
-    JAM-->>ADP: accountId, workflowExecutionId, accessToken/tokenId, FRONT/BACK upload URLs
+    ADP-->>FG: accountId, workflowExecutionId, accessToken/tokenId, FRONT/BACK upload URLs
+    FG-->>BIAN: account + workflow + upload details
+    BIAN-->>CH: Identity proofing session initialized
 
-    ADP->>JFR: POST .../accounts/{accountId}/workflow-executions/{workflowExecutionId}/credentials/{tokenId}/parts/FRONT\n(multipart JPG/PNG)
-    JFR-->>ADP: FRONT upload accepted
+    CH->>BIAN: Upload FRONT and BACK document images
+    BIAN->>FG: Forward document images
+    FG->>ADP: Upload FRONT/BACK to Jumio
 
-    ADP->>JBK: POST .../accounts/{accountId}/workflow-executions/{workflowExecutionId}/credentials/{tokenId}/parts/BACK\n(multipart JPG/PNG)
-    JBK-->>ADP: BACK upload accepted
+    ADP-->>FG: FRONT/BACK upload accepted
+    FG-->>BIAN: Document upload status
+    BIAN-->>CH: Upload accepted
 
-    ADP->>JFW: POST .../accounts/{accountId}/workflow-executions/{workflowExecutionId}\n(finalize workflow)
-    JFW-->>ADP: Workflow finalized
+    FG->>ADP: Finalize workflow after both uploads
+    ADP-->>FG: Workflow finalized
 
-    Note over ADP,JRS: Finalize must occur after BOTH uploads\nElse Fetch Result may return "precondition not fulfilled"
+    Note over FG,ADP: Finalize must occur after BOTH uploads\nElse Fetch Result may return "precondition not fulfilled"
 
-    ADP->>JRS: GET https://retrieval.emea-1.jumio.ai/api/v1/accounts/{accountId}/workflow-executions/{workflowExecutionId}
-    JRS-->>ADP: Full assessment result payload (original Jumio result)
+    FG->>ADP: Fetch final assessment result
+    ADP-->>FG: Full assessment result payload (original Jumio result)
 
-    ADP->>S3: POST https://gatewayqa.ustfinx.com/v1/document-directory/s3/upload\n(upload full fetch-result payload as PDF)
-    S3-->>ADP: S3 URL for Identity Proofing Log document
+    FG->>FG: Upload full fetch-result payload as PDF log document
+    FG->>FG: Register document in Document Directory\nand persist assessment/final decision in PLM
 
-    ADP->>DD: POST https://gatewayqa.ustfinx.com/v1/document-directory/register\n(register S3 URL with tags: Identity Proofing Log, PartyId, AssessmentId)
-    DD-->>ADP: documentDirectoryId
-
-    ADP->>PLM: Persist assessment result + final decision\nPersist original Jumio result metadata
-    ADP->>PLM: Update Identity Proofing BQ documentInstanceReference\nwith documentDirectoryId
-
-    ADP-->>BIAN: Initiate response with assessment + final result + document reference
+    ADP-->>FG: Final assessment + metadata confirmed
+    FG-->>BIAN: Initiate response with assessment + final result + document reference
     BIAN-->>CH: IdentityProofing Initiate response
 ```
 
