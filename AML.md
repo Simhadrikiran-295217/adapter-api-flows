@@ -1,3 +1,5 @@
+# AML/PEP Qualification Flow (BIAN + Comply Advantage + FinX Glue)
+
 ```mermaid
 sequenceDiagram
     participant channel as Channel
@@ -27,50 +29,66 @@ sequenceDiagram
     plm-->>channel: GET Retrieve response
 ```
 
-Explanation:
+## Explanation
 
-Initiate AML/PEP qualification from channel
+### 1. Initiate AML/PEP Qualification from Channel
 
-API: POST /PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/Initiate
+**API:** `POST /PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/Initiate`
 
-Trigger: Before party creation, channel triggers qualification to ensure customer passes AML/PEP screening. The request is sent with the party lifecycle context.
+**Trigger:** Before party creation, the channel triggers qualification to ensure the customer passes AML/PEP screening. The request is sent with the party lifecycle context.
 
-Transfer request from PLM BIAN service to FinX Glue Adapter
+---
 
-API: POST /v1/PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/Initiate
+### 2. Transfer Request from Party Lifecycle Management SD to FinX Glue Adapter
 
-PLM service receives the qualification initiation call and forwards it to FinX Glue Adapter. QualificationTaskRecord.Task contains the full customer profile serialized as a JSON string.
+**API:** `POST /v1/PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/Initiate`
 
-Integration to Comply Advantage screening workflow
+The Party Lifecycle Management BIAN service receives the qualification initiation call and forwards it to the FinX Glue Adapter. `QualificationTaskRecord.Task` contains the full customer profile serialized as a JSON string.
 
-API: POST /v2/workflows/sync/create-and-screen
+---
 
-Adapter maps the qualification payload to Comply Advantage format and calls create-and-screen for synchronous AML/PEP evaluation.
+### 3. Integration to Comply Advantage Screening Workflow
 
-Comply Advantage returns workflow outcome
+**API:** `POST /v2/workflows/sync/create-and-screen`
 
-API Response: workflow_instance_identifier, status, and risk/scoring/step results
+The adapter maps the qualification payload to Comply Advantage format and calls `create-and-screen` for synchronous AML/PEP evaluation.
 
-Adapter persists the assessment snapshot and returns the qualification initiate response back to PLM, which then returns qualification initiated outcome to channel.
+**Output:** Comply Advantage returns `workflow_instance_identifier`, `status`, and risk/scoring/step results.
 
-Retrieve qualification status/details from channel
+---
 
-API: GET /PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/{qualificationid}/Retrieve
+### 4. Comply Advantage Returns Workflow Outcome
 
-Trigger: Channel calls retrieve to fetch latest qualification status for the same party lifecycle and qualification id.
+**API Response:** `workflow_instance_identifier`, `status`, and risk/scoring/step results
 
-Transfer retrieve request from PLM BIAN service to FinX Glue Adapter
+The adapter persists the assessment snapshot and returns the qualification initiate response back to PLM, which then returns the qualification initiated outcome to the channel.
 
-API: GET /v1/PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/{qualificationid}/Retrieve
+---
 
-PLM forwards the retrieve request to adapter service to obtain latest screening details.
+### 5. Retrieve Qualification Status/Details from Channel
 
-Integration to Comply Advantage workflow retrieval
+**API:** `GET /PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/{qualificationid}/Retrieve`
 
-API: GET /v2/workflows/{workflow_instance_identifier}
+**Trigger:** The channel calls retrieve to fetch the latest qualification status for the same party lifecycle and qualification ID.
 
-Adapter resolves the stored workflow_instance_identifier for the qualification and fetches latest workflow state/details from Comply Advantage.
+---
 
-Output:
+### 6. Transfer Retrieve Request from Party Lifecycle Management SD to FinX Glue Adapter
 
-200 OK with qualification assessment record and latest AML/PEP screening status pushed back to channel via PLM and FinX Glue Adapter.
+**API:** `GET /v1/PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/{qualificationid}/Retrieve`
+
+PLM forwards the retrieve request to the adapter service to obtain the latest screening details.
+
+---
+
+### 7. Integration to Comply Advantage Workflow Retrieval
+
+**API:** `GET /v2/workflows/{workflow_instance_identifier}`
+
+The adapter resolves the stored `workflow_instance_identifier` for the qualification and fetches the latest workflow state/details from Comply Advantage.
+
+---
+
+### 8. Final Output
+
+**`200 OK`** — The qualification assessment record and latest AML/PEP screening status are returned to the channel via PLM and FinX Glue Adapter.
