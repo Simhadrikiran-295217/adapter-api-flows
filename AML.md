@@ -1,8 +1,7 @@
 ```mermaid
 sequenceDiagram
-    autonumber
     participant channel as Channel
-    participant plm as PLM
+    participant plm as Party Lifecycle Management
     participant finx as FinX Glue Adapter
     participant ca as Comply Advantage
 
