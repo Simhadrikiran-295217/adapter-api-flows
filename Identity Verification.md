@@ -51,94 +51,96 @@ sequenceDiagram
 
 ## Explanation
 
-### 1. Pre-step — Customer Uploads Documents to S3 and Gets Document Directory IDs
+### 1. Document Upload and Document Directory Registration
 
-**Trigger:** Before initiating identity proofing, the Customer Channel uploads FRONT and BACK document images to S3.
+The Customer Channel uploads both FRONT and BACK identity document images to S3.
 
-The upload operation creates records in the Document Directory SD. The channel receives `docDirectoryIds` (for example, `frontDocId` and `backDocId`) that reference those stored documents.
+S3 then creates document records in the Document Directory SD, and the Document Directory returns `docDirectoryIds` (`frontDocId` and `backDocId`) to **Party Lifecycle Management SD** as shown in the sequence.
 
 ---
 
-### 2. Initiate Identity Proofing from Customer Channel
+### 2. Identity Proofing Initiation from Customer Channel
 
 **API:** `POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate`
 
-The Customer Channel initiates identity proofing by calling Party Lifecycle Management SD and passing:
-- Customer consent
+The Customer Channel sends the Initiate request to Party Lifecycle Management SD with:
+- Consent
 - Customer internal reference
-- Location, IP address, and region
-- `docDirectoryIds` from Document Directory SD
+- Location, IP, and region
+- `docDirectoryIds`
 
 ---
 
-### 3. Transfer Request from Party Lifecycle Management SD to FinX Glue Adapter
+### 3. Internal Forwarding to FinX Glue Adapter
 
-**API:** `POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate` (forwarded internally)
+**API (forwarded):** `POST /v1/PartyLifecycleManagement/{id}/IdentityProofing/Initiate`
 
-The Party Lifecycle Management BIAN service forwards the Initiate request and `docDirectoryIds` to the FinX Glue Adapter to begin the Jumio workflow.
+Party Lifecycle Management SD forwards the initiation payload to FinX Glue Adapter so it can orchestrate the Jumio flow.
 
 ---
 
-### 4. Step 1 — Jumio Account API (Integration to Jumio via Glue)
+### 4. Jumio Account Creation
 
 **API:** `POST https://account.emea-1.jumio.ai/api/v1/accounts`
 
-The FinX Glue Adapter transforms and forwards the request to Jumio's Account Creation API with:
-- User consent
-- Customer internal reference
-- Location, IP, and region
-- Workflow definition key (fixed as `2`)
+FinX Glue calls Jumio Account API with consent and customer context details, using `workflowDefinitionKey=2`.
 
-**Output:** Jumio returns `accountId`, `workflowExecutionId`, `accessToken`/`tokenId`, and FRONT/BACK image upload URLs.
+Jumio returns:
+- `accountId`
+- `workflowExecutionId`
+- `accessToken` / `tokenId`
+- FRONT/BACK upload endpoints
 
----
-
-### 5. Step 2 — FinX Glue Resolves and Downloads FRONT Document
-
-Using the `docDirectoryIds`, FinX Glue Adapter resolves document metadata from Document Directory SD, then downloads the FRONT image from S3.
-
-**API to Jumio:** `POST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/FRONT`
-
-The downloaded FRONT image is uploaded by FinX Glue Adapter to Jumio as multipart content.
-
-**Output:** Jumio acknowledges FRONT image upload acceptance.
+FinX Glue sends these session details back to Party Lifecycle Management SD, which then confirms to the Customer Channel that the identity proofing session is initialized.
 
 ---
 
-### 6. Step 3 — FinX Glue Downloads and Uploads BACK Document
+### 5. FRONT Document Upload to Jumio
 
-FinX Glue Adapter downloads the BACK image from S3 using the corresponding Document Directory ID.
+FinX Glue resolves `docDirectoryIds` via Document Directory SD to obtain document locations.
 
-**API to Jumio:** `POST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/BACK`
+Then FinX Glue downloads the FRONT document from S3 and uploads it to Jumio:
 
-The BACK image is uploaded by FinX Glue Adapter to Jumio.
+**API:** `POST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/FRONT`
 
-**Output:** Jumio acknowledges BACK image upload acceptance. The channel is notified that both uploads are accepted.
+Jumio responds that FRONT upload is accepted.
 
 ---
 
-### 7. Step 4 — Finalize Workflow
+### 6. BACK Document Upload to Jumio
+
+FinX Glue downloads the BACK document from S3 using `backDocId` and uploads it to Jumio:
+
+**API:** `POST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}/credentials/{{tokenId}}/parts/BACK`
+
+Jumio responds that BACK upload is accepted.
+
+FinX Glue sends document upload status to Party Lifecycle Management SD, and Party Lifecycle Management SD notifies the Customer Channel that upload is accepted.
+
+---
+
+### 7. Workflow Finalization
 
 **API:** `POST https://api.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}`
 
-Once both FRONT and BACK images are uploaded, FinX Glue Adapter calls Jumio's Finalize Workflow API to indicate all credential parts are ready.
+After both FRONT and BACK uploads are accepted, FinX Glue calls Jumio Finalize Workflow API.
 
-> ⚠️ **Important:** Both images must be uploaded before this call. Calling Finalize prematurely may result in a `"precondition not fulfilled"` error when fetching results.
+> ⚠️ **Important:** Finalize must happen only after both uploads. Otherwise, subsequent result retrieval can fail with `"precondition not fulfilled"`.
 
 ---
 
-### 8. Step 5 — Fetch Verification Result
+### 8. Verification Result Retrieval
 
 **API:** `GET https://retrieval.emea-1.jumio.ai/api/v1/accounts/{{accountId}}/workflow-executions/{{workflowExecutionId}}`
 
-FinX Glue Adapter retrieves the full verification result from Jumio using the account ID and workflow execution ID.
+FinX Glue fetches the full assessment output from Jumio.
 
-**Output:** The full assessment result payload (original Jumio result) is returned to the adapter.
+Jumio returns the original full assessment result payload.
 
 ---
 
-### 9. Final Output
+### 9. Final Response Back to Customer Channel
 
-**`200 OK`** — FinX Glue Adapter returns the complete Initiate response (assessment result + final decision + document reference) through Party Lifecycle Management SD back to the Customer Channel.
+FinX Glue returns the Initiate response (assessment + final result + document reference) to Party Lifecycle Management SD, and Party Lifecycle Management SD returns `IdentityProofing Initiate` response to the Customer Channel.
 
 ---
