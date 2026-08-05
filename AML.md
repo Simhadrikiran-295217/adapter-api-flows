@@ -5,7 +5,6 @@ sequenceDiagram
     participant finx as FinX Glue Adapter
     participant ca as Comply Advantage
 
-    Note over channel,ca: ComplyAdvantage AML/PEP Screening via Qualification Assessment BQ (1..* per PartyLifecycleManagement CR)
 
     channel->>plm: POST /PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/Initiate
     Note right of channel: Before party creation, customer must pass AML/PEP screening
