@@ -13,7 +13,7 @@ sequenceDiagram
 
     CH->>S3: Upload FRONT and BACK document images
     S3-->>DD: Create document records
-    DD-->>CH: Return docDirectoryIds (frontDocId, backDocId)
+    DD-->>BIAN: Return docDirectoryIds (frontDocId, backDocId)
 
     CH->>BIAN: POST /PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
     BIAN->>FG: POST /v1/PartyLifecycleManagement/{id}/IdentityProofing/Initiate\n(consent, customerInternalRef, location, ip, region, docDirectoryIds)
