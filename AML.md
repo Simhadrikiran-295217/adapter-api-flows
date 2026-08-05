@@ -10,6 +10,7 @@ sequenceDiagram
     Note right of channel: Before party creation, customer must pass AML/PEP screening
 
     plm->>finx: Initiate Qualification assessment
+                (POST /v1/PartyLifecycleManagement/{partylifecyclemanagementId}/Qualification/Initiate)
     Note right of finx: QualificationTaskRecord.Task contains full customer profile serialized as JSON string
 
     finx->>ca: POST /v2/workflows/sync/create-and-screen\n(payload from QualificationTaskRecord.Task)
