@@ -34,7 +34,7 @@ sequenceDiagram
     FinX->>Core: GET /v3/subscriptions/{subscriptionKey}
     Core-->>FinX: subscriptionStatus=Active,\ncreatedDate, subscriptionName
 
-    FinX->>Core: PUT /v2/transactions/{correlationKey}?balanceCheck=true\n(single balanced transaction)\nLeg1: DEBIT loan account\ntransactionId=<human-readable>,\ntransactionCode=PMNT.IRCT.DMCT, status=POSTED,\nnarrative=Loan Disbursement\nLeg2: CREDIT customer receiving account\ntransactionId=<human-readable>,\ntransactionCode=PMNT.IRCT.DMCT, status=POSTED,\nnarrative=Loan Disbursement
+    FinX->>Core: PUT /v2/transactions/{correlationKey}?balanceCheck=true\n(single balanced transaction)\nLeg1: DEBIT loan account\ntransactionId=<human-readable>,\ntransactionCode=PMNT.IRCT.DMCT, amount, status=POSTED
     Core-->>FinX: Disbursement posted
     FinX-->>LoanSD: Initiate response (loan created + disbursed)
     LoanSD-->>Channel: 200/201 Success response
