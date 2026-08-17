@@ -15,27 +15,27 @@ sequenceDiagram
     Channel->>LoanSD: POST /Loan/Initiate (BIAN)\nLoanAmount, Currency, PartyReference,\nProductIdentifier, Repayment Terms,\nAccount Number (human-readable)
     LoanSD->>FinX: Validate & transform BIAN -> 10X adapter payload
 
-    FinX->>Core: POST /v2/arrangements\n{creditLimit, currency, partyKeys, productKey,\nexternalReference, repayment term/frequency/startDate,\nstate=OFFERED}
+    FinX->>Core: POST /v2/arrangements\n{creditLimit, currency, partyKey, productKey,\nexternalReference, termLength, termType,\nfrequency, startDate, state=OFFERED}
     Core-->>FinX: 201 Created + arrangementKey
     FinX-->>LoanSD: arrangementKey
 
-    Note over FinX,Core: Step 2 currently assumed at adapter level (no customer wait)
+    Note over FinX,Core: 10X only permits OFFERED at creation; accept is mandatory before disbursement
 
     FinX->>Core: POST /v2/arrangements/{arrangementKey}/accept
     alt Accept success
         Core-->>FinX: 204 No Content
     else Validation failure
-        Core-->>FinX: 404 + ref
+        Core-->>FinX: 404 + referenceId
     end
 
     FinX->>Core: GET /v3/arrangements/{arrangementKey}
-    Core-->>FinX: arrangement details + subscriptionKey + repaymentScheduleKey
+    Core-->>FinX: arrangement details\nproductKey, productVersion, creditLimit,\ncurrency, partyKey, startDate, externalReference,\nsubscriptionKey
 
     FinX->>Core: GET /v3/subscriptions/{subscriptionKey}
     Core-->>FinX: subscriptionStatus=Active,\ncreatedDate, subscriptionName
 
-    FinX->>Core: PUT /v2/transactions/{correlationKey}?balanceCheck=true\n(single balanced transaction)\nLeg1: DEBIT loan subscription\nLeg2: CREDIT customer receiving account\ntransactionCode=PMNT.IRCT.DMCT,\ntransactionStatus=POSTED,\nmetadata=narrative/type
-    Core-->>FinX: Disbursement posted (arrangement auto-updated to ACTIVE)
+    FinX->>Core: PUT /v2/transactions/{correlationKey}?balanceCheck=true\n(single balanced transaction)\nLeg1: DEBIT loan account\ntransactionId=<human-readable>,\ntransactionCode=PMNT.IRCT.DMCT, status=POSTED,\nnarrative=Loan Disbursement\nLeg2: CREDIT customer receiving account\ntransactionId=<human-readable>,\ntransactionCode=PMNT.IRCT.DMCT, status=POSTED,\nnarrative=Loan Disbursement
+    Core-->>FinX: Disbursement posted
     FinX-->>LoanSD: Initiate response (loan created + disbursed)
     LoanSD-->>Channel: 200/201 Success response
     end
