@@ -25,6 +25,6 @@ sequenceDiagram
     G->>X: GET /v1/schedules/{repaymentScheduleKey}/versions/latest
     X-->>G: repayment schedule (term, termType, interestRate, repaymentStartDate, Maturity Date),Repayment Start Date = dueDate where period=1, Maturity Date = last dueDate (based on number of payments)
 
-    G-->>L: Aggregated loan payload (BIAN mapping)
+    G-->>L: Fetched Loan Details (BIAN mapping)
     L-->>C: 200 OK Loan Retrieve response
 ```
