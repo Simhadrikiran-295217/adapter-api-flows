@@ -29,24 +29,23 @@ sequenceDiagram
     rect rgb(245, 255, 245)
         Note over FinXGlue,Core10X: Step 3 - Get arrangement details
         FinXGlue->>Core10X: GET /v3/arrangements/{arrangementKey}
-        Core10X-->>FinXGlue: arrangement details\nproductKey, version, creditLimit, currency,\npartyKey, startDate, externalReference, subscriptionKey
+        Core10X-->>FinXGlue: arrangement details (productKey, version, creditLimit, currency,partyKey, startDate, externalReference, subscriptionKey)
     end
 
     rect rgb(255, 248, 235)
         Note over FinXGlue,Core10X: Step 4 - Get subscription details
         FinXGlue->>Core10X: GET /v3/subscriptions/{subscriptionKey}
-        Core10X-->>FinXGlue: subscription details\nstatus = Active, creationDate, name
+        Core10X-->>FinXGlue: subscription details (status , creationDate, name)
     end
 
     rect rgb(255, 240, 245)
         Note over FinXGlue,Core10X: Step 5 - Disburse loan amount
-        FinXGlue->>Core10X: PUT /v2/transactions/{correlationKey}?balanceCheck=true\nBalanced transaction with 2 legs
-        Note over FinXGlue,Core10X: Leg 1: Debit loan account\nLeg 2: Credit customer receiving account\nEach leg includes transactionId, code = PMNT.IRCT. DMCT,\nstatus = POSTED, narrative = Loan Disbursement
+        FinXGlue->>Core10X: PUT /v2/transactions/{correlationKey}?balanceCheck=true
         Core10X-->>FinXGlue: Transaction posted successfully
     end
 
     FinXGlue-->>LoanSD: Loan initiated and disbursed
-    LoanSD-->>Channel: Loan subscription created successfully
+    LoanSD-->>Channel: Loan Account Created successfully
 ```
 
 ## Flow summary
