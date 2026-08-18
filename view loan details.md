@@ -2,7 +2,6 @@
 
 ```mermaid
 sequenceDiagram
-    autonumber
     participant C as Channel
     participant L as Loan SD
     participant G as FinX Glue
