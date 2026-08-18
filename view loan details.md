@@ -17,7 +17,7 @@ sequenceDiagram
     X-->>G: subscription details (status, productKey, productVersion, partyKey, createdDate, subscriptionName)
 
     G->>X: GET /v2/products/{productKey}/versions/{productVersion}/summary
-    X-->>G: product details (interestType inputs, productGroup, productSegment) Derive LoanType: LOANS + Personal => Consumer Loan,LOANS + Corporate/Business => Corporate Loan
+    X-->>G: product details (interestType, Loan Type, productGroup, productSegment) Derive Product group( LOANS ) + Product Segment(Personal) => Consumer Loan,Product group( LOANS ) + Product Segment(Corporate/Business) => Corporate Loan
 
     G->>X: POST /v3/subscriptions/{subscriptionKey}/settlement-quote
     X-->>G: Outstanding Balance
