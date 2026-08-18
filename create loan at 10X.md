@@ -2,7 +2,6 @@
 
 ```mermaid
 sequenceDiagram
-    autonumber
     participant Channel
     participant LoanSD as Loan SD
     participant FinXGlue as FinX Glue
@@ -13,8 +12,8 @@ sequenceDiagram
 
     rect rgb(245, 245, 245)
         Note over FinXGlue,Core10X: Step 1 - Create loan arrangement
-        FinXGlue->>Core10X: POST /v2/arrangements\ncreditLimit, currency, partyKey,\nproductKey, externalReference, repaymentTerms
-        Core10X-->>FinXGlue: 201 Created\narrangementKey\nstate = OFFERED
+        FinXGlue->>Core10X: POST /v2/arrangements (creditLimit, currency, partyKey,productKey, externalReference, repaymentTerms)
+        Core10X-->>FinXGlue: 201 Created (ArrangementKey Returned)
     end
 
     rect rgb(235, 245, 255)
